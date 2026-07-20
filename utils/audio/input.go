@@ -2,7 +2,7 @@ package utils
 
 import (
 	"fmt"
-	"unsafe"
+	"math"
 
 	"github.com/gen2brain/malgo"
 )
@@ -10,13 +10,8 @@ import (
 type Input struct {
 	ctx *malgo.AllocatedContext
 	device *malgo.Device
-	Frames chan Frame
-}
-
-type Frame struct {
-	Samples []float32
-	SampleRate int
-	Channels int
+	Format Format
+	Broadcaster *Broadcaster
 }
 
 func NewInput() (*Input, error) {
@@ -30,7 +25,11 @@ func NewInput() (*Input, error) {
 
 	return &Input{
 		ctx: ctx,
-		Frames: make(chan Frame, 16),
+		Format: Format{
+			SampleRate: 48000,
+			Channels: 1,
+		},
+		Broadcaster: NewBroadcaster(),
 	}, nil
 	
 }
@@ -51,17 +50,14 @@ func (i *Input) Start() error {
 
 				bits := uint32(input[offset]) | uint32(input[offset+1])<<8 | uint32(input[offset+2])<<16 | uint32(input[offset+3])<<24
 				
-				samples[j] = *(*float32)(unsafe.Pointer(&bits))
+				samples[j] = math.Float32frombits(bits)
 			}
 
 			frame := Frame{
 				Samples: samples,
 			}
 
-			select {
-			case i.Frames <- frame:
-			default:
-			}
+			i.Broadcaster.Publish(frame)
 		},
 	}
 

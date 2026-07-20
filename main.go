@@ -5,30 +5,36 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/heronhoga/auto-tuner/utils"
+	utils "github.com/heronhoga/auto-tuner/utils/audio"
 )
 
 func main() {
-	input, err := utils.NewInput()
-	if err != nil {
-		panic(err)
-	}
+    input, err := utils.NewInput()
+    if err != nil {
+        panic(err)
+    }
 
-	if err := input.Start(); err != nil {
-		panic(err)
-	}
+    if err := input.Start(); err != nil {
+        panic(err)
+    }
+    defer input.Stop()
 
-	defer input.Stop()
+    frames := input.Broadcaster.Subscribe()
 
-	go func() {
-		for frame := range input.Frames {
-			fmt.Printf("Received %d samples, (%d Hz, %d channels)\n", len(frame.Samples), frame.SampleRate, frame.Channels)
-		}
-	} ()
+    go func() {
+        for frame := range frames {
+            fmt.Printf(
+                "Received %d samples (%d Hz, %d channels)\n",
+                len(frame.Samples),
+                input.Format.SampleRate,
+                input.Format.Channels,
+            )
+        }
+    }()
 
-	fmt.Println("Listening..")
-	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, os.Interrupt)
-	<-sig
+    fmt.Println("Listening...")
 
+    sig := make(chan os.Signal, 1)
+    signal.Notify(sig, os.Interrupt)
+    <-sig
 }
