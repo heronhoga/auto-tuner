@@ -45,6 +45,30 @@ func (r *Renderer) Destroy() {
 }
 
 func (r *Renderer) Layout(size fyne.Size) {
+    samples := r.widget.Model.Samples()
+
+    if len(samples) < 2 {
+        return
+    }
+
+    width := size.Width
+    height := size.Height
+
+    count := len(samples)
+    if count > len(r.lines)+1 {
+        count = len(r.lines) + 1
+    }
+
+    for i := 0; i < count-1; i++ {
+        x1 := float32(i) * width / float32(count-1)
+        x2 := float32(i+1) * width / float32(count-1)
+
+        y1 := (1-samples[i]) * height / 2
+        y2 := (1-samples[i+1]) * height / 2
+
+        r.lines[i].Position1 = fyne.NewPos(x1, y1)
+        r.lines[i].Position2 = fyne.NewPos(x2, y2)
+    }
 }
 
 func (r *Renderer) MinSize() fyne.Size {
@@ -52,7 +76,9 @@ func (r *Renderer) MinSize() fyne.Size {
 }
 
 func (r *Renderer) Refresh() {
+    r.Layout(r.widget.Size())
+
     for _, line := range r.lines {
-        canvas.Refresh(line)
+        line.Refresh()
     }
 }

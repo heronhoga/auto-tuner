@@ -1,10 +1,11 @@
 package main
 
 import (
-	"fmt"
-	"os"
-	"os/signal"
+	"time"
 
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/app"
+	"github.com/heronhoga/auto-tuner/ui/oscilloscope"
 	utils "github.com/heronhoga/auto-tuner/utils/audio"
 )
 
@@ -13,6 +14,10 @@ func main() {
     if err != nil {
         panic(err)
     }
+
+    model := oscilloscope.NewModel()
+
+    scope := oscilloscope.New(model)
 
     if err := input.Start(); err != nil {
         panic(err)
@@ -23,18 +28,26 @@ func main() {
 
     go func() {
         for frame := range frames {
-            fmt.Printf(
-                "Received %d samples (%d Hz, %d channels)\n",
-                len(frame.Samples),
-                input.Format.SampleRate,
-                input.Format.Channels,
-            )
+            model.Update(frame.Samples)
         }
     }()
 
-    fmt.Println("Listening...")
+    a := app.New()
+    w := a.NewWindow("Auto Tuner")
 
-    sig := make(chan os.Signal, 1)
-    signal.Notify(sig, os.Interrupt)
-    <-sig
+    w.SetContent(scope)
+    w.Resize(fyne.NewSize(900, 300))
+
+    go func() {
+        ticker := time.NewTicker(time.Second / 60)
+        defer ticker.Stop()
+
+        for range ticker.C {
+            fyne.Do(func() {
+                scope.Refresh()
+            })
+        }
+    }()
+
+    w.ShowAndRun()
 }
