@@ -2,16 +2,18 @@ package oscilloscope
 
 import (
 	"fyne.io/fyne/v2/widget"
+	utils "github.com/heronhoga/auto-tuner/utils/audio"
 )
 
 type Widget struct {
 	widget.BaseWidget
-	Model *Model
+	
+	RingBuffer *utils.RingBuffer
 }
 
-func New(model *Model) *Widget {
+func New(ring *utils.RingBuffer) *Widget {
 	w := &Widget{
-		Model: model,
+		RingBuffer: ring,
 	}
 
 	w.ExtendBaseWidget(w)

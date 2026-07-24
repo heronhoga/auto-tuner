@@ -15,9 +15,9 @@ func main() {
         panic(err)
     }
 
-    model := oscilloscope.NewModel()
+    ringBuffer := utils.NewRingBuffer(4096)
 
-    scope := oscilloscope.New(model)
+    scope := oscilloscope.New(ringBuffer)
 
     if err := input.Start(); err != nil {
         panic(err)
@@ -28,7 +28,7 @@ func main() {
 
     go func() {
         for frame := range frames {
-            model.Update(frame.Samples)
+            ringBuffer.Write(frame.Samples)
         }
     }()
 

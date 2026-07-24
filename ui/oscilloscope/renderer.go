@@ -45,7 +45,7 @@ func (r *Renderer) Destroy() {
 }
 
 func (r *Renderer) Layout(size fyne.Size) {
-    samples := r.widget.Model.Samples()
+    samples := r.widget.RingBuffer.ReadLatest(len(r.lines) + 1)
 
     if len(samples) < 2 {
         return
