@@ -33,7 +33,7 @@ func main() {
     }()
 
     a := app.New()
-    w := a.NewWindow("Auto Tuner")
+    w := a.NewWindow("Hoga Auto Tuner")
 
     w.SetContent(scope)
     w.Resize(fyne.NewSize(900, 300))
