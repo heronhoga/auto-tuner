@@ -10,7 +10,7 @@ func difference(samples []float32) []float64 {
 
 		for j := 0; j < maxLag; j++ {
 			delta := float64(samples[j] - samples[j+tau])
-			sum = delta * delta
+			sum += delta * delta
 		}
 		diff[tau] = sum
 	}

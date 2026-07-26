@@ -16,12 +16,12 @@ func generateSine(freq float64, sampleRate float64, n int) []float32 {
 	return samples
 }
 
-func TestYIN440Hz(t *testing.T) {
+func TestDetectPitch440Hz(t *testing.T) {
 	const (
 		sampleRate = 48000.0
-		frequency = 440.0
-		nSamples = 4096
-		threshold = 0.1
+		frequency   = 440.0
+		nSamples    = 4096
+		threshold   = 0.10
 	)
 
 	samples := generateSine(frequency, sampleRate, nSamples)
@@ -29,29 +29,25 @@ func TestYIN440Hz(t *testing.T) {
 	diff := difference(samples)
 	cmnd := cumulativeMeanNormalizedDifference(diff)
 
-	for i := 0; i < 20; i++ {
-    	t.Logf("%2d  diff=%12.3f  cmnd=%8.5f", i, diff[i], cmnd[i])
+	tau := absoluteThreshold(cmnd, threshold)
+	if tau == -1 {
+		t.Fatal("no pitch detected")
 	}
 
-	lag := absoluteThreshold(cmnd, threshold)
+	tauHat := parabolicInterpolation(cmnd, tau)
+	freq := sampleRate / tauHat
 
-	expected := int(math.Round(sampleRate/frequency))
+	t.Logf("tau = %d", tau)
+	t.Logf("tauHat = %.6f", tauHat)
+	t.Logf("freq = %.6f", freq)
 
-	tolerance := 5
+	expectedTau := sampleRate / frequency
 
-	if math.Abs(float64(lag-expected)) > float64(tolerance) {
-		t.Fatalf("expected lag near %d, got %d", expected, lag)
+	if math.Abs(float64(tau)-expectedTau) > 5 {
+		t.Fatalf("expected tau around %.2f, got %d", expectedTau, tau)
 	}
 
-	if lag == -1 {
-    t.Fatal("no pitch detected")
-	}
-
-	if cmnd[0] != 1 {
-		t.Fatal("cmnd[0] should equal 1")
-	}
-
-	if lag <= 2 {
-		t.Fatalf("invalid lag: %d", lag)
+	if math.Abs(freq-frequency) > 1 {
+		t.Fatalf("expected freq around %.2f, got %.6f", frequency, freq)
 	}
 }
