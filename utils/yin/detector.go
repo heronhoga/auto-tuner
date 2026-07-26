@@ -2,7 +2,7 @@ package yin
 
 import (
 	"errors"
-	"fmt"
+	"math"
 )
 
 type Detector struct {
@@ -17,13 +17,13 @@ func New(sampleRate float64) *Detector {
 	}
 }
 
-func (d *Detector) Detect(samples []float32) (float64, error) {
+func (d *Detector) Detect(samples []float32) (NoteResult, error) {
 	diff := difference(samples)
 	cmnd := cumulativeMeanNormalizedDifference(diff)
 
 	tau := absoluteThreshold(cmnd, d.Threshold)
 	if tau == -1 {
-		return 0, errors.New("No Pitch Detected")
+		return NoteResult{}, errors.New("No Pitch Detected")
 	}
 
 	println("tau: ", tau)
@@ -34,10 +34,10 @@ func (d *Detector) Detect(samples []float32) (float64, error) {
 	frequency := d.SampleRate / tauHat
 	println("frequency: ", frequency)
 
-	for i := 100; i <= 115; i++ {
-		fmt.Printf("%3d %.8f\n", i, cmnd[i])
+	if frequency <= 0 || math.IsNaN(frequency) || math.IsInf(frequency, 0) {
+		return NoteResult{}, errors.New("No Pitch Detected")
 	}
 
-	return frequency, nil
+	return FrequencyToNote(frequency), nil
 
 }
