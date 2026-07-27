@@ -62,6 +62,9 @@ func main() {
                 continue
             }
 
+            fyne.Do(func() {
+                scope.SetNoteResult(result)
+            })
             fmt.Printf("freq=%.2f Hz note=%s%d cents=%+.2f\n",
 				result.Frequency,
 				result.NoteName,
