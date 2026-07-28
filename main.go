@@ -12,11 +12,26 @@ import (
 )
 
 func main() {
+    // input
     input, err := utils.NewInput()
     if err != nil {
         panic(err)
     }
 
+    // output playback
+    playbackBuffer := utils.NewPlaybackBuffer(48000)
+    output, err := utils.NewOutput(playbackBuffer)
+    if err != nil {
+        panic(err)
+    }
+
+    if err := output.Start(); err != nil {
+        panic(err)
+    }
+
+    defer output.Stop()
+
+    // analytics
     ringBuffer := utils.NewRingBuffer(4096)
     scope := oscilloscope.New(ringBuffer)
 
@@ -32,10 +47,19 @@ func main() {
 
     go func() {
         for frame := range frames {
+            // write samples to ring buffer
             ringBuffer.Write(frame.Samples)
+
+            // write samples to playback buffer
+            playbackBuffer.Write(frame.Samples)
         }
+
+        
     }()
 
+
+
+    // UI
     a := app.New()
     w := a.NewWindow("Hoga Auto Tuner")
 
