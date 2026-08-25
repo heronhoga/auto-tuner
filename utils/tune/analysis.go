@@ -22,21 +22,14 @@ func hannWindow(n int) []float32 {
 }
 
 func applyHannWindow(samples []float32) {
-	n := len(samples)
-
-	if n <= 1 {
-		return
-	}
-
-	for i := 0; i < n; i++ {
-		window := 0.5 * (1 - math.Cos(2*math.Pi*float64(i)/float64(n-1)))
-
-		samples[i] *= float32(window)
+	w := hannWindow(len(samples))
+	for i := range samples {
+		samples[i] *= w[i]
 	}
 }
 
 func extractAnalysisFrame(samples []float32, mark int, period float64) AnalysisFrame {
-	windowSize := int(math.Round(period))
+	windowSize := int(math.Round(period * 2))
 
 	half := windowSize / 2
 
