@@ -10,6 +10,7 @@ import (
 	"github.com/heronhoga/auto-tuner/ui"
 	"github.com/heronhoga/auto-tuner/ui/oscilloscope"
 	utils "github.com/heronhoga/auto-tuner/utils/audio"
+	"github.com/heronhoga/auto-tuner/utils/effects"
 	"github.com/heronhoga/auto-tuner/utils/tune"
 	"github.com/heronhoga/auto-tuner/utils/yin"
 )
@@ -41,6 +42,7 @@ func main() {
 	detector := yin.New(48000)
 	detector.Threshold = 0.10
 	corrector := tune.NewAutoCorrector(48000)
+	fx := effects.NewProcessor(48000)
 	frames := input.Broadcaster.Subscribe()
 
 	if err := input.Start(); err != nil {
@@ -53,12 +55,13 @@ func main() {
 			// write samples to ring buffer
 			ringBuffer.Write(frame.Samples)
 
-			// Correct the audio before sending it to the selected output device.
+			// Correct pitch, then apply chorus and reverb before playback.
 			if cap(corrected) < len(frame.Samples) {
 				corrected = make([]float32, len(frame.Samples))
 			}
 			corrected = corrected[:len(frame.Samples)]
 			corrector.Process(frame.Samples, corrected)
+			fx.Process(corrected, corrected)
 			playbackBuffer.Write(corrected)
 		}
 
@@ -68,9 +71,13 @@ func main() {
 	a := app.New()
 	w := a.NewWindow("Hoga Auto Tuner")
 
-	controls := container.NewVBox(ui.NewAudioDevices(input, output), ui.NewPitchCorrection(corrector))
+	controls := container.NewVBox(
+		ui.NewAudioDevices(input, output),
+		ui.NewPitchCorrection(corrector),
+		ui.NewEffects(fx),
+	)
 	w.SetContent(container.NewBorder(controls, nil, nil, nil, scope))
-	w.Resize(fyne.NewSize(900, 550))
+	w.Resize(fyne.NewSize(900, 650))
 
 	go func() {
 		ticker := time.NewTicker(time.Second / 60)
