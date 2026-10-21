@@ -11,11 +11,11 @@ var noteNames = []string{
 }
 
 type NoteResult struct {
-	NoteName string
-	Octave int
+	NoteName  string
+	Octave    int
 	Frequency float64
-	Cents float64
-	MIDI int
+	Cents     float64
+	MIDI      int
 }
 
 func FrequencyToNote(freq float64) NoteResult {
@@ -32,18 +32,17 @@ func FrequencyToNote(freq float64) NoteResult {
 	}
 
 	octave := (midi / 12) - 1
-	cents := 1200 * (midiFloat - float64(midi))
+	cents := 100 * (midiFloat - float64(midi))
 
 	return NoteResult{
-		NoteName: noteNames[noteIndex],
-		Octave: octave,
+		NoteName:  noteNames[noteIndex],
+		Octave:    octave,
 		Frequency: freq,
-		Cents: cents,
-		MIDI: midi,
-
+		Cents:     cents,
+		MIDI:      midi,
 	}
 }
 
 func (n NoteResult) String() string {
-    return fmt.Sprintf("%s%d (%+.2f cents)", n.NoteName, n.Octave, n.Cents)
+	return fmt.Sprintf("%s%d (%+.2f cents)", n.NoteName, n.Octave, n.Cents)
 }

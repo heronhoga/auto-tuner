@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"math"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/heronhoga/auto-tuner/utils/yin"
@@ -118,7 +119,7 @@ func TestOLARatioOne(t *testing.T) {
 	input := generateSine(freq, sampleRate, int(sampleRate*durationSec))
 	output := runThroughProcessor(t, input, sampleRate, 1.0, chunkSize)
 
-	if err := writeWAV("test_output_ratio1.wav", output, int(sampleRate)); err != nil {
+	if err := writeWAV(filepath.Join(t.TempDir(), "test_output_ratio1.wav"), output, int(sampleRate)); err != nil {
 		t.Fatalf("failed to write wav: %v", err)
 	}
 
@@ -200,10 +201,10 @@ func TestOLARatioOneSilence(t *testing.T) {
 	const durationSec = 1.0
 	const chunkSize = 512
 
-	input := generateSilenceSine(int(sampleRate*durationSec))
+	input := generateSilenceSine(int(sampleRate * durationSec))
 	output := runThroughProcessor(t, input, sampleRate, 1.0, chunkSize)
 
-	if err := writeWAV("test_output_ratio1.wav", output, int(sampleRate)); err != nil {
+	if err := writeWAV(filepath.Join(t.TempDir(), "test_output_ratio1.wav"), output, int(sampleRate)); err != nil {
 		t.Fatalf("failed to write wav: %v", err)
 	}
 
@@ -293,7 +294,7 @@ func TestPSOLAPitchShift(t *testing.T) {
 	input := generateSine(inputFreq, sampleRate, int(sampleRate*durationSec))
 	output := runThroughProcessor(t, input, sampleRate, ratio, chunkSize)
 
-	if err := writeWAV("test_output_pitchshift.wav", output, int(sampleRate)); err != nil {
+	if err := writeWAV(filepath.Join(t.TempDir(), "test_output_pitchshift.wav"), output, int(sampleRate)); err != nil {
 		t.Fatalf("failed to write wav: %v", err)
 	}
 

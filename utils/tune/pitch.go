@@ -1,5 +1,7 @@
 package tune
 
+import "slices"
+
 func findInitialPeak(samples []float32) int {
 	peak := -1
 
@@ -55,6 +57,21 @@ func FindPitchMark(samples []float32, period float64) []int {
 	}
 
 	marks := []int{first}
+	radius := max(1, int(period*0.3))
+	// The strongest peak can be anywhere in the window. Track backward too,
+	// otherwise the beginning of each window may contain no synthesis grains.
+	for {
+		expected := float64(marks[len(marks)-1]) - period
+		if expected < 1 {
+			break
+		}
+		previous := findPeakNear(samples, int(expected), radius)
+		if previous == -1 || previous >= marks[len(marks)-1] {
+			break
+		}
+		marks = append(marks, previous)
+	}
+	slices.Reverse(marks)
 
 	for {
 		expected := float64(marks[len(marks)-1]) + period
@@ -63,15 +80,13 @@ func FindPitchMark(samples []float32, period float64) []int {
 			break
 		}
 
-		radius := int(period * 0.3)
-
 		next := findPeakNear(
 			samples,
 			int(expected),
 			radius,
 		)
 
-		if next == -1 {
+		if next == -1 || next <= marks[len(marks)-1] {
 			break
 		}
 
