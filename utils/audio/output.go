@@ -7,7 +7,7 @@ import (
 )
 
 type Output struct {
-	ctx *malgo.AllocatedContext
+	ctx    *malgo.AllocatedContext
 	device *malgo.Device
 	Format Format
 	Buffer *PlaybackBuffer
@@ -15,22 +15,31 @@ type Output struct {
 
 func NewOutput(buffer *PlaybackBuffer) (*Output, error) {
 
-    ctx, err := malgo.InitContext(nil, malgo.ContextConfig{}, nil)
-    if err != nil {
-        return nil, err
-    }
+	ctx, err := malgo.InitContext(nil, malgo.ContextConfig{}, nil)
+	if err != nil {
+		return nil, err
+	}
 
-    return &Output{
-        ctx: ctx,
-        Format: Format{
-            SampleRate: 48000,
-            Channels:   1,
-        },
-        Buffer: buffer,
-    }, nil
+	return &Output{
+		ctx: ctx,
+		Format: Format{
+			SampleRate: 48000,
+			Channels:   1,
+		},
+		Buffer: buffer,
+	}, nil
 }
 
 func (o *Output) Start() error {
+	return o.SelectDevice(nil)
+}
+
+func (o *Output) Devices() ([]malgo.DeviceInfo, error) {
+	return o.ctx.Devices(malgo.Playback)
+}
+
+// SelectDevice switches playback; nil selects the system default.
+func (o *Output) SelectDevice(id *malgo.DeviceID) error {
 	config := malgo.DefaultDeviceConfig(malgo.Playback)
 	config.Playback.Format = malgo.FormatF32
 	config.Playback.Channels = uint32(o.Format.Channels)
@@ -43,7 +52,7 @@ func (o *Output) Start() error {
 
 			for i, sample := range samples {
 				bits := math.Float32bits(sample)
-				offset := i*4
+				offset := i * 4
 
 				output[offset] = byte(bits)
 				output[offset+1] = byte(bits >> 8)
@@ -54,26 +63,18 @@ func (o *Output) Start() error {
 		},
 	}
 
-	device, err := malgo.InitDevice(
-		o.ctx.Context,
-		config,
-		deviceCallback,
-	)
-
-	if err != nil {
-		return err
-	}
-
-	o.device = device
-
-	return device.Start()
+	return replaceDevice(o.ctx.Context, &o.device, config, deviceCallback, id)
 }
 
 func (o *Output) Stop() {
 	if o.device != nil {
 		o.device.Uninit()
+		o.device = nil
 	}
 
-	o.ctx.Uninit()
-	o.ctx.Free()
+	if o.ctx != nil {
+		o.ctx.Uninit()
+		o.ctx.Free()
+		o.ctx = nil
+	}
 }

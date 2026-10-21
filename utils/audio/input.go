@@ -8,9 +8,9 @@ import (
 )
 
 type Input struct {
-	ctx *malgo.AllocatedContext
-	device *malgo.Device
-	Format Format
+	ctx         *malgo.AllocatedContext
+	device      *malgo.Device
+	Format      Format
 	Broadcaster *Broadcaster
 }
 
@@ -27,14 +27,23 @@ func NewInput() (*Input, error) {
 		ctx: ctx,
 		Format: Format{
 			SampleRate: 48000,
-			Channels: 1,
+			Channels:   1,
 		},
 		Broadcaster: NewBroadcaster(),
 	}, nil
-	
+
 }
 
 func (i *Input) Start() error {
+	return i.SelectDevice(nil)
+}
+
+func (i *Input) Devices() ([]malgo.DeviceInfo, error) {
+	return i.ctx.Devices(malgo.Capture)
+}
+
+// SelectDevice switches capture; nil selects the system default.
+func (i *Input) SelectDevice(id *malgo.DeviceID) error {
 	config := malgo.DefaultDeviceConfig(malgo.Capture)
 
 	config.Capture.Format = malgo.FormatF32
@@ -49,7 +58,7 @@ func (i *Input) Start() error {
 				offset := j * 4
 
 				bits := uint32(input[offset]) | uint32(input[offset+1])<<8 | uint32(input[offset+2])<<16 | uint32(input[offset+3])<<24
-				
+
 				samples[j] = math.Float32frombits(bits)
 			}
 
@@ -61,23 +70,19 @@ func (i *Input) Start() error {
 		},
 	}
 
-	device, err := malgo.InitDevice(i.ctx.Context, config, deviceCallbacks)
-
-	if err != nil {
-		return err
-	}
-
-	i.device = device
-
-	return device.Start()
+	return replaceDevice(i.ctx.Context, &i.device, config, deviceCallbacks, id)
 
 }
 
 func (i *Input) Stop() {
 	if i.device != nil {
 		i.device.Uninit()
+		i.device = nil
 	}
 
-	i.ctx.Uninit()
-	i.ctx.Free()
+	if i.ctx != nil {
+		i.ctx.Uninit()
+		i.ctx.Free()
+		i.ctx = nil
+	}
 }
